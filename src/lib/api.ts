@@ -2,6 +2,7 @@ const API_URLS = {
   auth: 'https://functions.poehali.dev/99d5c417-1b44-407c-a7e0-de8b9616ae5f',
   messages: 'https://functions.poehali.dev/eed8c62b-774e-4292-b40f-88a68f3b65c0',
   upload: 'https://functions.poehali.dev/cc7193c7-66b7-44b4-b557-d81cab4064e6',
+  settings: 'https://functions.poehali.dev/86864550-5817-4044-a37b-89ed3e2016e7',
 };
 
 export interface User {
@@ -163,5 +164,42 @@ export const uploadAPI = {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Ошибка загрузки файла');
     return data;
+  },
+};
+
+export interface UserSettings {
+  id: number;
+  user_id: number;
+  message_sound: boolean;
+  call_sound: boolean;
+  push_notifications: boolean;
+  show_online_status: boolean;
+  send_read_receipts: boolean;
+  two_factor_auth: boolean;
+  dark_theme: boolean;
+  animations: boolean;
+  hd_quality: boolean;
+  noise_cancellation: boolean;
+  auto_answer: boolean;
+  updated_at: string;
+}
+
+export const settingsAPI = {
+  async getSettings(userId: number): Promise<UserSettings> {
+    const response = await fetch(`${API_URLS.settings}?user_id=${userId}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Ошибка загрузки настроек');
+    return data.settings;
+  },
+
+  async updateSettings(userId: number, settings: Partial<UserSettings>): Promise<UserSettings> {
+    const response = await fetch(API_URLS.settings, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, ...settings }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Ошибка обновления настроек');
+    return data.settings;
   },
 };

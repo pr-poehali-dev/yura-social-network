@@ -4,16 +4,41 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import Icon from "@/components/ui/icon";
 import { notificationsAPI } from "@/lib/notifications";
+import { settingsAPI, UserSettings } from "@/lib/api";
 import { useState, useEffect } from "react";
 
 export default function Settings() {
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
-    const isEnabled = notificationsAPI.getPermissionStatus() === 'granted';
-    setPushEnabled(isEnabled);
+    loadSettings();
   }, []);
+
+  const loadSettings = async () => {
+    try {
+      setLoading(true);
+      const data = await settingsAPI.getSettings(user.id);
+      setSettings(data);
+    } catch (error) {
+      console.error('Ошибка загрузки настроек:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateSetting = async (key: keyof UserSettings, value: boolean) => {
+    if (!settings) return;
+    
+    try {
+      const updated = await settingsAPI.updateSettings(user.id, { [key]: value });
+      setSettings(updated);
+    } catch (error) {
+      console.error('Ошибка обновления настроек:', error);
+      alert('Не удалось обновить настройку');
+    }
+  };
 
   const handlePushToggle = async (checked: boolean) => {
     if (!notificationsAPI.isSupported()) {
@@ -21,27 +46,31 @@ export default function Settings() {
       return;
     }
 
-    setLoading(true);
     try {
       if (checked) {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
         await notificationsAPI.registerServiceWorker();
         const permission = await notificationsAPI.requestPermission();
         if (permission === 'granted') {
           await notificationsAPI.subscribeToPush(user.id);
-          setPushEnabled(true);
+          await updateSetting('push_notifications', true);
         }
       } else {
         await notificationsAPI.unsubscribe();
-        setPushEnabled(false);
+        await updateSetting('push_notifications', false);
       }
     } catch (error) {
       console.error('Ошибка:', error);
       alert('Не удалось изменить настройки уведомлений');
-    } finally {
-      setLoading(false);
     }
   };
+
+  if (loading || !settings) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p>Загрузка настроек...</p>
+      </div>
+    );
+  }
   return (
     <ScrollArea className="h-full">
       <div className="p-6 space-y-6">
@@ -59,7 +88,10 @@ export default function Settings() {
                 <p className="font-medium">Звук сообщений</p>
                 <p className="text-sm text-muted-foreground">Воспроизводить звук при получении</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={settings.message_sound}
+                onCheckedChange={(checked) => updateSetting('message_sound', checked)}
+              />
             </div>
             
             <div className="flex items-center justify-between">
@@ -67,7 +99,10 @@ export default function Settings() {
                 <p className="font-medium">Звук звонков</p>
                 <p className="text-sm text-muted-foreground">Включить рингтон</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={settings.call_sound}
+                onCheckedChange={(checked) => updateSetting('call_sound', checked)}
+              />
             </div>
             
             <div className="flex items-center justify-between">
@@ -76,9 +111,8 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">Получать уведомления о новых сообщениях</p>
               </div>
               <Switch 
-                checked={pushEnabled} 
+                checked={settings.push_notifications} 
                 onCheckedChange={handlePushToggle}
-                disabled={loading}
               />
             </div>
           </div>
@@ -96,7 +130,10 @@ export default function Settings() {
                 <p className="font-medium">Статус "В сети"</p>
                 <p className="text-sm text-muted-foreground">Показывать когда вы онлайн</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={settings.show_online_status}
+                onCheckedChange={(checked) => updateSetting('show_online_status', checked)}
+              />
             </div>
             
             <div className="flex items-center justify-between">
@@ -104,7 +141,10 @@ export default function Settings() {
                 <p className="font-medium">Прочитанные сообщения</p>
                 <p className="text-sm text-muted-foreground">Отправлять уведомления о прочтении</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={settings.send_read_receipts}
+                onCheckedChange={(checked) => updateSetting('send_read_receipts', checked)}
+              />
             </div>
             
             <div className="flex items-center justify-between">
@@ -112,7 +152,10 @@ export default function Settings() {
                 <p className="font-medium">Двухфакторная аутентификация</p>
                 <p className="text-sm text-muted-foreground">Дополнительная защита аккаунта</p>
               </div>
-              <Switch />
+              <Switch 
+                checked={settings.two_factor_auth}
+                onCheckedChange={(checked) => updateSetting('two_factor_auth', checked)}
+              />
             </div>
           </div>
         </Card>
@@ -129,7 +172,10 @@ export default function Settings() {
                 <p className="font-medium">Тёмная тема</p>
                 <p className="text-sm text-muted-foreground">Использовать тёмный режим</p>
               </div>
-              <Switch />
+              <Switch 
+                checked={settings.dark_theme}
+                onCheckedChange={(checked) => updateSetting('dark_theme', checked)}
+              />
             </div>
             
             <div className="flex items-center justify-between">
@@ -137,7 +183,10 @@ export default function Settings() {
                 <p className="font-medium">Анимации</p>
                 <p className="text-sm text-muted-foreground">Плавные переходы интерфейса</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={settings.animations}
+                onCheckedChange={(checked) => updateSetting('animations', checked)}
+              />
             </div>
           </div>
         </Card>
@@ -154,7 +203,10 @@ export default function Settings() {
                 <p className="font-medium">HD качество</p>
                 <p className="text-sm text-muted-foreground">Использовать высокое качество видео</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={settings.hd_quality}
+                onCheckedChange={(checked) => updateSetting('hd_quality', checked)}
+              />
             </div>
             
             <div className="flex items-center justify-between">
@@ -162,7 +214,10 @@ export default function Settings() {
                 <p className="font-medium">Шумоподавление</p>
                 <p className="text-sm text-muted-foreground">Фильтровать фоновый шум</p>
               </div>
-              <Switch defaultChecked />
+              <Switch 
+                checked={settings.noise_cancellation}
+                onCheckedChange={(checked) => updateSetting('noise_cancellation', checked)}
+              />
             </div>
             
             <div className="flex items-center justify-between">
@@ -170,7 +225,10 @@ export default function Settings() {
                 <p className="font-medium">Автоматическое подключение</p>
                 <p className="text-sm text-muted-foreground">Отвечать на звонки автоматически</p>
               </div>
-              <Switch />
+              <Switch 
+                checked={settings.auto_answer}
+                onCheckedChange={(checked) => updateSetting('auto_answer', checked)}
+              />
             </div>
           </div>
         </Card>

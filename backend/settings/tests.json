@@ -1,0 +1,35 @@
+{
+  "tests": [
+    {
+      "name": "Get user settings",
+      "method": "GET",
+      "path": "/?user_id=1",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "settings": {
+          "user_id": "number",
+          "message_sound": "boolean",
+          "dark_theme": "boolean"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Update user settings",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "message_sound": false,
+        "dark_theme": true
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "settings": {
+          "user_id": "number"
+        }
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
