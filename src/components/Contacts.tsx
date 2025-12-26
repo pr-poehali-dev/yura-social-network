@@ -3,29 +3,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Icon from "@/components/ui/icon";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { messagesAPI, User } from "@/lib/api";
 
-interface Contact {
-  id: number;
-  name: string;
-  phone: string;
-  online: boolean;
+interface ContactsProps {
+  userId: number;
 }
 
-const mockContacts: Contact[] = [
-  { id: 1, name: "Анна Смирнова", phone: "+7 999 123-45-67", online: true },
-  { id: 2, name: "Дмитрий Петров", phone: "+7 999 234-56-78", online: false },
-  { id: 3, name: "Мария Иванова", phone: "+7 999 345-67-89", online: true },
-  { id: 4, name: "Алексей Козлов", phone: "+7 999 456-78-90", online: false },
-  { id: 5, name: "Елена Новикова", phone: "+7 999 567-89-01", online: true },
-  { id: 6, name: "Сергей Волков", phone: "+7 999 678-90-12", online: false },
-  { id: 7, name: "Ольга Соколова", phone: "+7 999 789-01-23", online: true },
-];
-
-export default function Contacts() {
+export default function Contacts({ userId }: ContactsProps) {
   const [search, setSearch] = useState("");
+  const [contacts, setContacts] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredContacts = mockContacts.filter(contact =>
+  useEffect(() => {
+    loadContacts();
+  }, [userId]);
+
+  const loadContacts = async () => {
+    try {
+      const data = await messagesAPI.getContacts(userId);
+      setContacts(data);
+    } catch (error) {
+      console.error('Ошибка загрузки контактов:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredContacts = contacts.filter(contact =>
     contact.name.toLowerCase().includes(search.toLowerCase()) ||
     contact.phone.includes(search)
   );
@@ -46,45 +51,51 @@ export default function Contacts() {
       </div>
 
       <ScrollArea className="flex-1 p-4">
-        <div className="space-y-2">
-          {filteredContacts.map((contact) => (
-            <div
-              key={contact.id}
-              className="flex items-center gap-3 p-3 rounded-xl hover:bg-gradient-card transition-all cursor-pointer"
-            >
-              <div className="relative">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src="" />
-                  <AvatarFallback className="gradient-accent text-white font-medium">
-                    {contact.name.split(" ").map(n => n[0]).join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full transition-all ${
-                  contact.online ? "bg-green-500 animate-pulse" : "bg-gray-400"
-                }`} />
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground">Загрузка...</div>
+        ) : filteredContacts.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">Контакты не найдены</div>
+        ) : (
+          <div className="space-y-2">
+            {filteredContacts.map((contact) => (
+              <div
+                key={contact.id}
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-gradient-card transition-all cursor-pointer"
+              >
+                <div className="relative">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={contact.avatar_url || ""} />
+                    <AvatarFallback className="gradient-accent text-white font-medium">
+                      {contact.name.split(" ").map(n => n[0]).join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full transition-all ${
+                    contact.is_online ? "bg-green-500 animate-pulse" : "bg-gray-400"
+                  }`} />
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm truncate">{contact.name}</h3>
+                  <p className="text-xs text-muted-foreground">{contact.phone}</p>
+                  <p className={`text-xs mt-0.5 ${
+                    contact.is_online ? "text-green-600 font-medium" : "text-gray-500"
+                  }`}>
+                    {contact.is_online ? "В сети" : "Не в сети"}
+                  </p>
+                </div>
+                
+                <div className="flex gap-1">
+                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full">
+                    <Icon name="MessageCircle" size={18} className="text-primary" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full">
+                    <Icon name="Phone" size={18} className="text-accent" />
+                  </Button>
+                </div>
               </div>
-              
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm truncate">{contact.name}</h3>
-                <p className="text-xs text-muted-foreground">{contact.phone}</p>
-                <p className={`text-xs mt-0.5 ${
-                  contact.online ? "text-green-600 font-medium" : "text-gray-500"
-                }`}>
-                  {contact.online ? "В сети" : "Не в сети"}
-                </p>
-              </div>
-              
-              <div className="flex gap-1">
-                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full">
-                  <Icon name="MessageCircle" size={18} className="text-primary" />
-                </Button>
-                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full">
-                  <Icon name="Phone" size={18} className="text-accent" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </ScrollArea>
 
       <div className="p-4 border-t bg-white/80 backdrop-blur-sm">

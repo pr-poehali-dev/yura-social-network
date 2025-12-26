@@ -1,0 +1,40 @@
+{
+  "tests": [
+    {
+      "name": "Test user registration",
+      "method": "POST",
+      "body": {
+        "action": "register",
+        "phone": "+79991234567",
+        "name": "Test User"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "user": {
+          "id": "number",
+          "phone": "string",
+          "name": "string"
+        },
+        "token": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test user login",
+      "method": "POST",
+      "body": {
+        "action": "login",
+        "phone": "+79991234567"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "user": {
+          "id": "number",
+          "phone": "string"
+        },
+        "token": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

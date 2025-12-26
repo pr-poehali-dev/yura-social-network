@@ -3,8 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Icon from "@/components/ui/icon";
+import { User } from "@/lib/api";
 
-export default function Profile() {
+interface ProfileProps {
+  user: User;
+  onLogout: () => void;
+}
+
+export default function Profile({ user, onLogout }: ProfileProps) {
   return (
     <ScrollArea className="h-full">
       <div className="p-6 space-y-6">
@@ -13,7 +19,7 @@ export default function Profile() {
             <Avatar className="h-32 w-32 border-4 border-white shadow-lg">
               <AvatarImage src="" />
               <AvatarFallback className="gradient-primary text-white text-4xl font-bold">
-                ИВ
+                {user.name.split(" ").map(n => n[0]).join("")}
               </AvatarFallback>
             </Avatar>
             <Button
@@ -25,8 +31,8 @@ export default function Profile() {
           </div>
           
           <div>
-            <h2 className="text-2xl font-bold">Иван Васильев</h2>
-            <p className="text-muted-foreground">@ivanvas</p>
+            <h2 className="text-2xl font-bold">{user.name}</h2>
+            <p className="text-muted-foreground">{user.phone}</p>
           </div>
         </div>
 
@@ -37,7 +43,7 @@ export default function Profile() {
             </div>
             <div className="flex-1">
               <p className="text-xs text-muted-foreground">Телефон</p>
-              <p className="font-medium">+7 999 123-45-67</p>
+              <p className="font-medium">{user.phone}</p>
             </div>
           </div>
           
@@ -62,12 +68,14 @@ export default function Profile() {
           </div>
         </Card>
 
-        <Card className="p-4 space-y-3">
-          <h3 className="font-semibold mb-2">О себе</h3>
-          <p className="text-sm text-muted-foreground">
-            Frontend разработчик. Люблю создавать красивые интерфейсы 🚀
-          </p>
-        </Card>
+        {user.bio && (
+          <Card className="p-4 space-y-3">
+            <h3 className="font-semibold mb-2">О себе</h3>
+            <p className="text-sm text-muted-foreground">
+              {user.bio}
+            </p>
+          </Card>
+        )}
 
         <div className="space-y-2">
           <Button variant="outline" className="w-full justify-start rounded-xl h-14">
@@ -91,7 +99,11 @@ export default function Profile() {
           </Button>
         </div>
 
-        <Button variant="destructive" className="w-full rounded-xl">
+        <Button 
+          variant="destructive" 
+          className="w-full rounded-xl"
+          onClick={onLogout}
+        >
           <Icon name="LogOut" size={20} className="mr-2" />
           Выйти
         </Button>

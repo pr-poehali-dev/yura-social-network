@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Test get contacts",
+      "method": "GET",
+      "path": "/?action=get_contacts&user_id=1",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "contacts": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test create chat",
+      "method": "POST",
+      "body": {
+        "action": "create_chat",
+        "user_id": 1,
+        "participant_ids": [2],
+        "is_group": false
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "chat_id": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Icon from "@/components/ui/icon";
+import VoiceRecorder from "@/components/VoiceRecorder";
+import AudioPlayer from "@/components/AudioPlayer";
+import VideoCall from "@/components/VideoCall";
 import { useState, useEffect, useRef } from "react";
 
 interface Message {
@@ -12,6 +15,10 @@ interface Message {
   isMine: boolean;
   isGroup?: boolean;
   sender?: string;
+  type?: 'text' | 'audio' | 'image';
+  audioUrl?: string;
+  duration?: number;
+  imageUrl?: string;
 }
 
 const mockChats = {
@@ -45,12 +52,17 @@ const mockChats = {
 
 interface ChatWindowProps {
   chatId?: number;
+  userId: number;
 }
 
-export default function ChatWindow({ chatId }: ChatWindowProps) {
+export default function ChatWindow({ chatId, userId }: ChatWindowProps) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isInCall, setIsInCall] = useState(false);
+  const [callType, setCallType] = useState<'audio' | 'video'>('audio');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const chatData = chatId ? mockChats[chatId as keyof typeof mockChats] : null;
 
   useEffect(() => {
@@ -73,10 +85,46 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
       text: message,
       time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
       isMine: true,
+      type: 'text',
     };
     
     setMessages([...messages, newMessage]);
     setMessage("");
+  };
+
+  const handleVoiceComplete = (fileUrl: string, duration: number) => {
+    const newMessage: Message = {
+      id: messages.length + 1,
+      text: '',
+      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      isMine: true,
+      type: 'audio',
+      audioUrl: fileUrl,
+      duration,
+    };
+    
+    setMessages([...messages, newMessage]);
+    setIsRecording(false);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const newMessage: Message = {
+        id: messages.length + 1,
+        text: '',
+        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        isMine: true,
+        type: 'image',
+        imageUrl: reader.result as string,
+      };
+      
+      setMessages([...messages, newMessage]);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -97,6 +145,17 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           <p className="text-muted-foreground">Начните общение с друзьями</p>
         </div>
       </div>
+    );
+  }
+
+  if (isInCall) {
+    return (
+      <VideoCall
+        contactName={chatData?.name || ""}
+        contactAvatar=""
+        isVideoCall={callType === 'video'}
+        onEndCall={() => setIsInCall(false)}
+      />
     );
   }
 
@@ -132,10 +191,26 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
           )}
         </div>
         <div className="flex gap-2">
-          <Button size="icon" variant="ghost" className="rounded-full">
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="rounded-full"
+            onClick={() => {
+              setCallType('audio');
+              setIsInCall(true);
+            }}
+          >
             <Icon name="Phone" size={20} />
           </Button>
-          <Button size="icon" variant="ghost" className="rounded-full">
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="rounded-full"
+            onClick={() => {
+              setCallType('video');
+              setIsInCall(true);
+            }}
+          >
             <Icon name="Video" size={20} />
           </Button>
           <Button size="icon" variant="ghost" className="rounded-full">
@@ -162,7 +237,13 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
                 {chatData?.isGroup && !msg.isMine && (
                   <p className="text-xs font-semibold mb-1 text-primary">{msg.sender}</p>
                 )}
-                <p className="text-sm">{msg.text}</p>
+                {msg.type === 'audio' && msg.audioUrl ? (
+                  <AudioPlayer audioUrl={msg.audioUrl} duration={msg.duration} />
+                ) : msg.type === 'image' && msg.imageUrl ? (
+                  <img src={msg.imageUrl} alt="Изображение" className="rounded-lg max-w-full" />
+                ) : (
+                  <p className="text-sm">{msg.text}</p>
+                )}
                 <span className={`text-xs mt-1 block ${msg.isMine ? "text-white/80" : "text-muted-foreground"}`}>
                   {msg.time}
                 </span>
@@ -173,27 +254,56 @@ export default function ChatWindow({ chatId }: ChatWindowProps) {
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t bg-white/80 backdrop-blur-sm">
-        <div className="flex items-center gap-2">
-          <Button size="icon" variant="ghost" className="rounded-full">
-            <Icon name="Paperclip" size={20} />
-          </Button>
-          <Input
-            placeholder="Введите сообщение..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="flex-1 rounded-full border-2"
-          />
-          <Button 
-            size="icon" 
-            className="gradient-primary rounded-full hover-scale"
-            onClick={handleSend}
-          >
-            <Icon name="Send" size={20} className="text-white" />
-          </Button>
+      {isRecording ? (
+        <VoiceRecorder 
+          onRecordingComplete={handleVoiceComplete}
+          onCancel={() => setIsRecording(false)}
+        />
+      ) : (
+        <div className="p-4 border-t bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleImageUpload}
+            />
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="rounded-full"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Icon name="Paperclip" size={20} />
+            </Button>
+            <Input
+              placeholder="Введите сообщение..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="flex-1 rounded-full border-2"
+            />
+            {message.trim() ? (
+              <Button 
+                size="icon" 
+                className="gradient-primary rounded-full hover-scale"
+                onClick={handleSend}
+              >
+                <Icon name="Send" size={20} className="text-white" />
+              </Button>
+            ) : (
+              <Button 
+                size="icon" 
+                className="gradient-accent rounded-full hover-scale"
+                onClick={() => setIsRecording(true)}
+              >
+                <Icon name="Mic" size={20} className="text-white" />
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

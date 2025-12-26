@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Icon from "@/components/ui/icon";
@@ -9,13 +9,44 @@ import Profile from "@/components/Profile";
 import Gallery from "@/components/Gallery";
 import Calls from "@/components/Calls";
 import Settings from "@/components/Settings";
+import LoginScreen from "@/components/LoginScreen";
+import { User } from "@/lib/api";
 
 type Tab = "chats" | "contacts" | "profile" | "gallery" | "calls" | "settings";
 
 const Index = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("chats");
   const [selectedChatId, setSelectedChatId] = useState<number>();
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    const savedToken = localStorage.getItem('token');
+    if (savedUser && savedToken) {
+      setUser(JSON.parse(savedUser));
+      setToken(savedToken);
+    }
+  }, []);
+
+  const handleLogin = (userData: User, userToken: string) => {
+    setUser(userData);
+    setToken(userToken);
+    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('token', userToken);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+  };
+
+  if (!user || !token) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
 
   const renderLeftPanel = () => {
     switch (activeTab) {
@@ -38,9 +69,9 @@ const Index = () => {
           </>
         );
       case "contacts":
-        return <Contacts />;
+        return <Contacts userId={user.id} />;
       case "profile":
-        return <Profile />;
+        return <Profile user={user} onLogout={handleLogout} />;
       case "gallery":
         return <Gallery />;
       case "calls":
@@ -52,7 +83,7 @@ const Index = () => {
 
   const renderRightPanel = () => {
     if (activeTab === "chats") {
-      return <ChatWindow chatId={selectedChatId} />;
+      return <ChatWindow chatId={selectedChatId} userId={user.id} />;
     }
     return null;
   };
