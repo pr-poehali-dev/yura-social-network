@@ -5,6 +5,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Icon from "@/components/ui/icon";
 import { useState, useEffect } from "react";
 import { messagesAPI, User } from "@/lib/api";
+import AddContactModal from "./AddContactModal";
+import InviteModal from "./InviteModal";
 
 interface ContactsProps {
   userId: number;
@@ -14,6 +16,8 @@ export default function Contacts({ userId }: ContactsProps) {
   const [search, setSearch] = useState("");
   const [contacts, setContacts] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   useEffect(() => {
     loadContacts();
@@ -98,12 +102,35 @@ export default function Contacts({ userId }: ContactsProps) {
         )}
       </ScrollArea>
 
-      <div className="p-4 border-t bg-white/80 backdrop-blur-sm">
-        <Button className="w-full gradient-primary text-white rounded-full">
+      <div className="p-4 border-t bg-white/80 backdrop-blur-sm space-y-2">
+        <Button 
+          className="w-full gradient-primary text-white rounded-full"
+          onClick={() => setAddModalOpen(true)}
+        >
           <Icon name="UserPlus" size={20} className="mr-2" />
           Добавить контакт
         </Button>
+        <Button 
+          variant="outline" 
+          className="w-full rounded-full"
+          onClick={() => setInviteModalOpen(true)}
+        >
+          <Icon name="Share2" size={20} className="mr-2" />
+          Пригласить друзей
+        </Button>
       </div>
+      
+      <AddContactModal
+        open={addModalOpen}
+        onOpenChange={setAddModalOpen}
+        userId={userId}
+        onContactAdded={loadContacts}
+      />
+      
+      <InviteModal
+        open={inviteModalOpen}
+        onOpenChange={setInviteModalOpen}
+      />
     </div>
   );
 }
