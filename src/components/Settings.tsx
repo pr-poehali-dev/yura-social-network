@@ -3,8 +3,45 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import Icon from "@/components/ui/icon";
+import { notificationsAPI } from "@/lib/notifications";
+import { useState, useEffect } from "react";
 
 export default function Settings() {
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const isEnabled = notificationsAPI.getPermissionStatus() === 'granted';
+    setPushEnabled(isEnabled);
+  }, []);
+
+  const handlePushToggle = async (checked: boolean) => {
+    if (!notificationsAPI.isSupported()) {
+      alert('Ваш браузер не поддерживает push-уведомления');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (checked) {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        await notificationsAPI.registerServiceWorker();
+        const permission = await notificationsAPI.requestPermission();
+        if (permission === 'granted') {
+          await notificationsAPI.subscribeToPush(user.id);
+          setPushEnabled(true);
+        }
+      } else {
+        await notificationsAPI.unsubscribe();
+        setPushEnabled(false);
+      }
+    } catch (error) {
+      console.error('Ошибка:', error);
+      alert('Не удалось изменить настройки уведомлений');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <ScrollArea className="h-full">
       <div className="p-6 space-y-6">
@@ -35,10 +72,14 @@ export default function Settings() {
             
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Вибрация</p>
-                <p className="text-sm text-muted-foreground">Вибрировать при уведомлениях</p>
+                <p className="font-medium">Push-уведомления</p>
+                <p className="text-sm text-muted-foreground">Получать уведомления о новых сообщениях</p>
               </div>
-              <Switch />
+              <Switch 
+                checked={pushEnabled} 
+                onCheckedChange={handlePushToggle}
+                disabled={loading}
+              />
             </div>
           </div>
         </Card>

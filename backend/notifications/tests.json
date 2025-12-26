@@ -1,0 +1,35 @@
+{
+  "tests": [
+    {
+      "name": "Test subscribe to notifications",
+      "method": "POST",
+      "body": {
+        "action": "subscribe",
+        "user_id": 1,
+        "subscription": {
+          "endpoint": "https://fcm.googleapis.com/fcm/send/test123",
+          "keys": {
+            "p256dh": "test_p256dh_key",
+            "auth": "test_auth_key"
+          }
+        }
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "subscription_id": "number"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test get user subscriptions",
+      "method": "GET",
+      "path": "/?user_id=1",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "subscriptions": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import Gallery from "@/components/Gallery";
 import Calls from "@/components/Calls";
 import Settings from "@/components/Settings";
 import LoginScreen from "@/components/LoginScreen";
+import NotificationPrompt from "@/components/NotificationPrompt";
 import { User } from "@/lib/api";
 
 type Tab = "chats" | "contacts" | "profile" | "gallery" | "calls" | "settings";
@@ -20,6 +21,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<Tab>("chats");
   const [selectedChatId, setSelectedChatId] = useState<number>();
   const [search, setSearch] = useState("");
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -35,6 +37,7 @@ const Index = () => {
     setToken(userToken);
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('token', userToken);
+    setShowNotificationPrompt(true);
   };
 
   const handleLogout = () => {
@@ -89,7 +92,14 @@ const Index = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <>
+      {showNotificationPrompt && (
+        <NotificationPrompt 
+          userId={user.id} 
+          onComplete={() => setShowNotificationPrompt(false)} 
+        />
+      )}
+      <div className="flex h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <div className="w-20 gradient-primary flex flex-col items-center py-6 gap-6">
         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
           <Icon name="MessageCircle" size={24} className="text-primary" />
@@ -179,6 +189,7 @@ const Index = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
