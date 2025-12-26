@@ -59,14 +59,19 @@ export default function Contacts() {
                     {contact.name.split(" ").map(n => n[0]).join("")}
                   </AvatarFallback>
                 </Avatar>
-                {contact.online && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
-                )}
+                <div className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full transition-all ${
+                  contact.online ? "bg-green-500 animate-pulse" : "bg-gray-400"
+                }`} />
               </div>
               
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm truncate">{contact.name}</h3>
                 <p className="text-xs text-muted-foreground">{contact.phone}</p>
+                <p className={`text-xs mt-0.5 ${
+                  contact.online ? "text-green-600 font-medium" : "text-gray-500"
+                }`}>
+                  {contact.online ? "В сети" : "Не в сети"}
+                </p>
               </div>
               
               <div className="flex gap-1">

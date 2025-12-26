@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import Icon from "@/components/ui/icon";
 
 interface Chat {
   id: number;
@@ -10,6 +11,8 @@ interface Chat {
   time: string;
   unread: number;
   online: boolean;
+  isGroup?: boolean;
+  participants?: number;
 }
 
 const mockChats: Chat[] = [
@@ -30,6 +33,8 @@ const mockChats: Chat[] = [
     time: "13:15",
     unread: 5,
     online: false,
+    isGroup: true,
+    participants: 3,
   },
   {
     id: 3,
@@ -57,6 +62,8 @@ const mockChats: Chat[] = [
     time: "Пн",
     unread: 0,
     online: false,
+    isGroup: true,
+    participants: 8,
   },
 ];
 
@@ -80,13 +87,17 @@ export default function ChatList({ onSelectChat, selectedChatId }: ChatListProps
             <div className="relative">
               <Avatar className="h-12 w-12">
                 <AvatarImage src={chat.avatar} />
-                <AvatarFallback className="gradient-primary text-white font-medium">
+                <AvatarFallback className={`${chat.isGroup ? "gradient-accent" : "gradient-primary"} text-white font-medium`}>
                   {chat.name.split(" ").map(n => n[0]).join("")}
                 </AvatarFallback>
               </Avatar>
-              {chat.online && (
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
-              )}
+              {chat.isGroup ? (
+                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-sm">
+                  <Icon name="Users" size={10} className="text-primary" />
+                </div>
+              ) : chat.online ? (
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full animate-pulse" />
+              ) : null}
             </div>
             
             <div className="flex-1 min-w-0">
